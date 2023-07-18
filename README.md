@@ -4,15 +4,15 @@ This is an small command-line hashing tool written in Python 3. It was developed
 
 Main features:
 
-* Support hash algorithms commonly used: SHA1, MD5, SHA256;
+* Support commonly used hash algorithms: SHA1, MD5, SHA256;
 * Support multithreading. Each thread hashes a file, other file and so on. It uses many threads as CPU cores available in the system;
 * Handle filenames with eastern characters;
 * Operates in recursive mode;
-* Understand wildcards in filenames to hash;
-* Output file format compatible with Unix tools, fsum and others;
+* Understands wildcards in filenames to hash;
+* Output file format is compatible with Unix tools, fsum and others;
 * Hash files or check hashes inside a file generated previously;
 * Some others options to improve performance;
-* All dependences included in one binary file.
+* All dependences included in one binary file (see Releases).
 
 
 ## Usage
