@@ -14,7 +14,7 @@ VERBOSE = False
 
 BUFLEN  = 16384
 DEBUG   = False
-VERSION = "v1.5"
+VERSION = "v1.0.0-public"
 
 def hashFile(alg, fileName):
     m = eval(hashes[alg])
@@ -108,7 +108,7 @@ def enumFilesToCheck(checkFDesc, outFile):
                 if alg in hashes.keys():
                     filesToHash.add((fileName, alg, hashWanted))
                 else:
-                    logHash (alg, "HASH UNSUP", fileName, outFile)
+                    logHash (alg, "HASH UNSUPdir ", fileName, outFile)
             else:
                 logHash ("", "LINE ERROR", line, outFile)
 
@@ -136,7 +136,7 @@ def showMessage(msg = None, showHelp = True):
     if showHelp:
         print (f"Usage: {sys.argv[0]} [--s] [--f] [-a (sha256 | sha1 | md5)] [-o oufFile] dirOrFileSource ...", file=sys.stderr)
         print (f"       {sys.argv[0]} -c fileHashes", file=sys.stderr)
-        print (f"by GALILEU Batista (with Hamilton Pinho support). Jul, 2023 - {VERSION}", file=sys.stderr)
+        print (f"by GALILEU Batista (with Hamilton Pinho support). Aug, 2023 - {VERSION}", file=sys.stderr)
         print (f"\t--h  show this help.", file=sys.stderr)
         print (f"\t--s  single-threaded. Default: multi-threaded", file=sys.stderr)
         print (f"\t--r  recursive. Default: false", file=sys.stderr)
