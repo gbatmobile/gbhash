@@ -14,7 +14,7 @@ VERBOSE = False
 
 BUFLEN  = 16384
 DEBUG   = False
-VERSION = "v1.0.0-public"
+VERSION = "v1.1.0-public"
 
 def hashFile(alg, fileName):
     m = eval(hashes[alg])
@@ -69,7 +69,7 @@ def logHash (alg, hashValue, fileName, outFile):
     else:
         toShow = f"{hashValue} ?{alg}*{fileName}\n"
     if VERBOSE: print (toShow, end="")
-    outFile.write (toShow)
+    outFile.write (toShow.encode('utf-8'))
     lckOutput.release()
 
 def enumFilesToHash(baseToHash):
@@ -108,7 +108,7 @@ def enumFilesToCheck(checkFDesc, outFile):
                 if alg in hashes.keys():
                     filesToHash.add((fileName, alg, hashWanted))
                 else:
-                    logHash (alg, "HASH UNSUPdir ", fileName, outFile)
+                    logHash (alg, "HASH UNSUP", fileName, outFile)
             else:
                 logHash ("", "LINE ERROR", line, outFile)
 
@@ -136,7 +136,7 @@ def showMessage(msg = None, showHelp = True):
     if showHelp:
         print (f"Usage: {sys.argv[0]} [--s] [--f] [-a (sha256 | sha1 | md5)] [-o oufFile] dirOrFileSource ...", file=sys.stderr)
         print (f"       {sys.argv[0]} -c fileHashes", file=sys.stderr)
-        print (f"by GALILEU Batista (with Hamilton Pinho support). Aug, 2023 - {VERSION}", file=sys.stderr)
+        print (f"by GALILEU Batista (with Hamilton Pinho support). Nov, 2023 - {VERSION}", file=sys.stderr)
         print (f"\t--h  show this help.", file=sys.stderr)
         print (f"\t--s  single-threaded. Default: multi-threaded", file=sys.stderr)
         print (f"\t--r  recursive. Default: false", file=sys.stderr)
@@ -182,7 +182,7 @@ def processOptions():
                 if ind < len(sys.argv):
                     if FORCE or not os.path.exists(sys.argv[ind]):
                         try:
-                            OUTFILE = open (sys.argv[ind], "w", encoding='utf-8')
+                            OUTFILE = open (sys.argv[ind], "wb")
                         except:
                             showMessage (f"Access denied to {sys.argv[ind]}!")
                             exit(2)
@@ -197,6 +197,7 @@ def processOptions():
 
 def main():
     ind = processOptions()
+    if OUTFILE == sys.stdout: sys.stdout.reconfigure(encoding='utf-8')
 
     if CHKFILE:
         hashAll(OUTFILE, CHKFILE)
