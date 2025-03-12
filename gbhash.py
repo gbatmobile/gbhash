@@ -14,24 +14,20 @@ VERBOSE = False
 
 BUFLEN  = 16384
 DEBUG   = False
-VERSION = "v1.1.1-public"
-DATE    =  str(datetime.date.today())
+VERSION = "v1.2.0-public"
+DATE    = "2025-fev-24"
 
 def hashFile(alg, fileName):
     m = eval(hashes[alg])
     try:
-        if os.path.getsize(fileName) > 0:
-            fd = open (fileName, "rb")
+        fd = open (fileName, "rb")
 
+        rBytes = fd.read(BUFLEN)
+        while len(rBytes) > 0:
+            m.update(rBytes)
             rBytes = fd.read(BUFLEN)
-            while len(rBytes) > 0:
-                m.update(rBytes)
-                rBytes = fd.read(BUFLEN)
-            fd.close()
-            hashValue = m.hexdigest()
-        else:
-            hashValue = "EMPTY FILE"
-            if not CHKFILE:  hashValue = hashValue.ljust(m.digest_size*2)
+        fd.close()
+        hashValue = m.hexdigest()
     except Exception as e:
         hashValue = "ACCESS ERROR"
         if not CHKFILE:  hashValue = hashValue.ljust(m.digest_size*2)
@@ -39,17 +35,22 @@ def hashFile(alg, fileName):
     return hashValue
 
 def hashFileWorker(cpu, outFile):
-    fileName, alg, hashWanted = getFileToHash()
-    while fileName:
-        if DEBUG: print (f"Hashing {fileName} on cpu {cpu}")
-        hashValue = hashFile(alg, fileName)
-        if CHKFILE:
-            if hashValue.upper() == hashWanted.upper():
-               hashValue = "OK"
-            else:
-               if "ERROR" not in hashValue: hashValue = "FAILED"
-        logHash(alg, hashValue, fileName, outFile)
+    global checkFailed
+    try:
         fileName, alg, hashWanted = getFileToHash()
+        while fileName:
+            if DEBUG: print (f"Hashing {fileName} on cpu {cpu}")
+            hashValue = hashFile(alg, fileName)
+            if CHKFILE:
+                if hashValue.upper() == hashWanted.upper():
+                   hashValue = "OK"
+                else:
+                   hashValue = "FAILED"
+                   checkFailed += 1
+            logHash(alg, hashValue, fileName, outFile)
+            fileName, alg, hashWanted = getFileToHash()
+    except:
+        None
 
 def getFileToHash():
     lckFiles.acquire()
@@ -82,16 +83,18 @@ def enumFilesToHash(baseToHash):
         if os.path.isabs(baseToHash) and not FORCE:
             showMessage ("Hashing absolute path is dangerous. Use --f flag to force.")
 
-        globFolder = baseToHash+("\\**" if RECURSIVE else "")
-        filesToHash.update(glob.glob(globFolder+"\\*", recursive=RECURSIVE))
-        filesToHash.update(glob.glob(globFolder+"\\.*", recursive=RECURSIVE))
+        filesToHash.update(glob.glob(baseToHash+"\\**",
+                                     recursive=RECURSIVE,
+                                     include_hidden=True))
     else:
         pathAndFile = os.path.split(baseToHash)
         if os.path.isdir(pathAndFile[0]):
             globPattern = pathAndFile[0]+("\\**" if RECURSIVE else "")+"\\"+pathAndFile[1]
         else:
-            globPattern = baseToHash
-        filesToHash.update(glob.glob(globPattern, recursive=RECURSIVE))
+            globPattern = "."+("\\**" if RECURSIVE else "")+"\\"+pathAndFile[1]
+        filesToHash.update(glob.glob(globPattern,
+                                     recursive=RECURSIVE,
+                                     include_hidden=True))
     filesToHash = set(filter(lambda f: os.path.isfile(f), filesToHash))
 
 def enumFilesToCheck(checkFDesc, outFile):
@@ -116,19 +119,28 @@ def enumFilesToCheck(checkFDesc, outFile):
 
 
 def hashAll(outFile, baseToHash=None):
-    if CHKFILE:
-        enumFilesToCheck(CHKFILE, outFile)
-    else:
-        enumFilesToHash(baseToHash)
+    global filesToHash
+    try:
+        if CHKFILE:
+            enumFilesToCheck(CHKFILE, outFile)
+        else:
+            enumFilesToHash(baseToHash)
 
-    threads = []
-    for cpu in range(CPUs):
-        t = threading.Thread(target=hashFileWorker, args=(cpu, outFile))
-        threads.append(t)
-        t.start()
+        threads = []
+        for cpu in range(CPUs):
+            t = threading.Thread(target=hashFileWorker, args=(cpu, outFile))
+            threads.append(t)
+            t.start()
 
-    for t in threads:
-        t.join()
+        for t in threads:
+            t.join()
+
+        if CHKFILE and checkFailed > 0:
+            print (f"\n {checkFailed} checksum(s) failed.", file=sys.stderr)
+
+    except KeyboardInterrupt as kbe:
+        filesToHash = []
+        print (f"Operation aborted by user.", file=sys.stderr)
 
 def showMessage(msg = None, showHelp = True):
     if (msg):
@@ -214,4 +226,5 @@ def main():
 lckOutput = threading.Lock()
 lckFiles = threading.Lock()
 filesToHash = set()
+checkFailed = 0
 main()
